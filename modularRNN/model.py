@@ -37,7 +37,7 @@ class CTRNNCell(RNNCellBase):
     bias_init: Initializer = initializers.zeros_init()
     dtype: Optional[Dtype] = None
     param_dtype: Dtype = jnp.float32
-    carry_init: Initializer = initializers.zeros_init()
+    carry_init: Initializer = initializers.ones_init()
 
     @compact
     def __call__(self, carry, inputs,):
