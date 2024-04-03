@@ -1,6 +1,7 @@
-import jax
 import jax.numpy as jnp
 from jax import random
+from jax.nn import one_hot
+from tqdm import tqdm
 import tensorflow as tf
 
 class ModularArithmeticTask:
@@ -51,7 +52,8 @@ class ModularArithmeticTask:
         Returns:
             boolean
         """
-        three_gap = jnp.all(jnp.diff(pulse_indicies) >= 3) # 3 could be config
+        three_gap = jnp.all(jnp.diff(pulse_indicies) >= 2) # 2 could be config
+        # Keep in mind that the differences between pulses can cause slow downs in generation of trials
         greater_than_two = pulse_indicies[0] > 2 # 2 could be config
         less_than_ninety_seven = pulse_indicies[-1] < 97 # 97 could be config
 
@@ -96,4 +98,56 @@ class ModularArithmeticTask:
         cumulative_sum = jnp.cumsum(pulses)
         cumulative_mod = cumulative_sum % mod_value
 
-        return pulses, cumulative_mod
+        return jnp.asarray(pulses, dtype=jnp.int32), jnp.asarray(cumulative_mod, dtype=jnp.int32)
+    
+    def create_input_output_tensors(self, pulses, cumulative_mod, mod_value):
+        """
+        Create input and output tensors from previously defined pulses.
+
+        Returns:
+            input_tensor (arr)
+            output_tensor (arr)
+        """
+        mod_value_array = jnp.asarray(mod_value * jnp.ones(100), dtype=jnp.int32) # Again 100 could be variable
+        mod_value_tensor = one_hot(mod_value_array, 12)[:, 2:]
+
+        pulses_tensor = one_hot(pulses, 11)[:, 1:]
+        input_tensor = jnp.concatenate((mod_value_tensor, pulses_tensor), axis=1)
+
+        output_tensor = one_hot(cumulative_mod, 10)
+
+        return input_tensor, output_tensor
+    
+    def generate_task_trial(self,):
+        """
+        Generate an instance of the task, a trial.
+
+        Returns:
+            input_tensor (arr)
+            output_tensor (arr)
+        """
+        pulse_amount = self.pulse_distribution(self.generate_subkey())
+        mod_value = self.sample_modular_value()
+        pulse_indicies = self.generate_pulse_indicies(pulse_amount)
+        pulse_values = self.generate_pulse_values(pulse_amount, mod_value)
+        pulses, cumulative_mod = self.create_pulses_and_cumulative_mod(pulse_indicies, pulse_values, mod_value)
+        input_tensor, output_tensor = self.create_input_output_tensors(pulses, cumulative_mod, mod_value)
+
+        return input_tensor, output_tensor
+    
+    def generate_trials(self, trial_amount):
+        """
+        Generate trials ...
+        """
+        inputs_tensor = []
+        outputs_tensor = []
+
+        for i in tqdm(range(trial_amount)):
+            input_tensor, output_tensor = self.generate_task_trial()
+            inputs_tensor.append(input_tensor)
+            outputs_tensor.append(output_tensor)
+
+        inputs_tensor = jnp.stack(inputs_tensor, axis=0)
+        outputs_tensor = jnp.stack(outputs_tensor, axis=0)
+
+        return inputs_tensor, outputs_tensor
