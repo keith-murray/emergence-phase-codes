@@ -97,6 +97,7 @@ class ModularArithmeticTask:
         pulses = pulses.at[pulse_indicies].set(pulse_values)
         cumulative_sum = jnp.cumsum(pulses)
         cumulative_mod = cumulative_sum % mod_value
+        # Strange to think that this one line constitutes the majority of the dataset's computation
 
         return jnp.asarray(pulses, dtype=jnp.int32), jnp.asarray(cumulative_mod, dtype=jnp.int32)
     
@@ -151,3 +152,28 @@ class ModularArithmeticTask:
         outputs_tensor = jnp.stack(outputs_tensor, axis=0)
 
         return inputs_tensor, outputs_tensor
+    
+    def create_tf_dataset(self, trial_amount, batch_size):
+        """
+        Create TensorFlow dataset ...
+        """
+        inputs_tensor, outputs_tensor = self.generate_trials(trial_amount)
+        tf_dataset = tf.data.Dataset.from_tensor_slices((inputs_tensor, outputs_tensor))
+        tf_dataset = tf_dataset.shuffle(
+            tf_dataset.cardinality(), 
+            reshuffle_each_iteration=True, 
+            seed=self.generate_subkey()[0].item()
+        )
+        tf_dataset = tf_dataset.batch(batch_size, drop_remainder=True)
+        tf_dataset = tf_dataset.prefetch(2)
+
+        return tf_dataset
+    
+    def tf_datasets(self,):
+        """
+        Create TensorFlow datasets for both training and testing.
+        """
+        training_dataset = self.create_tf_dataset(self.training_trials, self.train_batch_size)
+        testing_dataset = self.create_tf_dataset(self.testing_trials, self.testing_trials)
+
+        return training_dataset, testing_dataset
