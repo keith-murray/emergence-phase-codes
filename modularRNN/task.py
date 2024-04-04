@@ -66,13 +66,13 @@ class ModularArithmeticTask:
         Returns:
             pulse_indicies (arr)
         """
-        valid_pulses = False
+        # valid_pulses = False
 
-        while not valid_pulses:
+        # while not valid_pulses:
             # Could modify 100 to change trial length
-            pulse_indicies = random.permutation(self.generate_subkey(), 100)[:pulse_amount].sort()
-            valid_pulses = self.test_pulse_indicies(pulse_indicies)
-        
+            # pulse_indicies = random.permutation(self.generate_subkey(), 100)[:pulse_amount].sort()
+            # valid_pulses = self.test_pulse_indicies(pulse_indicies)
+        pulse_indicies = random.permutation(self.generate_subkey(), 100)[:pulse_amount].sort()
         return pulse_indicies
     
     def generate_pulse_values(self, pulse_amount, mod_value):

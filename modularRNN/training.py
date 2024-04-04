@@ -10,15 +10,15 @@ import pandas as pd
 
 @struct.dataclass
 class Metrics(metrics.Collection):
-    loss: metrics.Average.from_output('loss')
+    loss: metrics.Average.from_output('loss') # type: ignore
 
 class TrainState(train_state.TrainState):
     metrics: Metrics
 
-def create_train_state(module, subkey, learning_rate,):
+def create_train_state(module, subkey, learning_rate, weight_decay):
     """Creates an initial `TrainState`."""
     params = module.init(subkey, jnp.ones([1, 100, 20]))['params'] # (batch, time, inputs)
-    tx = optax.adamw(learning_rate,)
+    tx = optax.adamw(learning_rate, weight_decay=weight_decay)
     return TrainState.create(
         apply_fn=module.apply,
         params=params,
@@ -27,12 +27,12 @@ def create_train_state(module, subkey, learning_rate,):
     )
 
 @jax.jit
-def train_step(state, batch, subkey):
+def train_step(state, batch, subkey, l2_penalty):
     """Train for a single step."""
     def loss_fn(params):
         output, rates = state.apply_fn({'params': params}, batch[0], init_key=subkey)
         loss_task = optax.squared_error(output, batch[1]).mean()
-        loss_rates = jnp.float32(0.0001) * optax.squared_error(rates).mean()
+        loss_rates = jnp.float32(l2_penalty) * optax.squared_error(rates).mean()
         return loss_task + loss_rates
     grad_fn = jax.grad(loss_fn)
     grads = grad_fn(state.params)
@@ -40,10 +40,10 @@ def train_step(state, batch, subkey):
     return state
 
 @jax.jit
-def compute_metrics(state, batch, subkey):
+def compute_metrics(state, batch, subkey, l2_penalty):
     output, rates = state.apply_fn({'params': state.params}, batch[0], init_key=subkey)
     loss_task = optax.squared_error(output, batch[1]).mean()
-    loss_rates = jnp.float32(0.0001) * optax.squared_error(rates).mean()
+    loss_rates = jnp.float32(l2_penalty) * optax.squared_error(rates).mean()
     loss = loss_task + loss_rates
     metric_updates = state.metrics.single_from_model_output(loss=loss,)
     metrics = state.metrics.merge(metric_updates)
@@ -89,7 +89,7 @@ class ModelParameters:
         # Need to already have example `params` loaded to saved params
         self.params = serialization.from_bytes(self.params, bytes_output)
 
-def compute_metrics_and_update_history(subkey, state, batch, metric_prefix, metrics_history):
+def compute_metrics_and_update_history(subkey, state, batch, metric_prefix, metrics_history, l2_penalty):
     """
     Compute metrics for a given dataset batch and update the metrics history.
 
@@ -99,12 +99,13 @@ def compute_metrics_and_update_history(subkey, state, batch, metric_prefix, metr
         subkey: The random subkey.
         metric_prefix: A string prefix to use for the metrics (e.g., 'train', 'test').
         metrics_history: An instance of MetricsHistory.
+        l2_penalty (float)
     """
-    new_state = compute_metrics(state, batch, subkey)
+    new_state = compute_metrics(state, batch, subkey, l2_penalty)
     for metric, value in new_state.metrics.compute().items():
         metrics_history.append(f'{metric_prefix}_{metric}', value)
 
-def train_model(key, state, train_ds, test_ds, epochs,):
+def train_model(key, state, train_ds, test_ds, epochs, l2_penalty):
     """
     Trains a model using provided datasets and records various performance metrics.
 
@@ -114,6 +115,7 @@ def train_model(key, state, train_ds, test_ds, epochs,):
         train_ds (Dataset): The dataset for training the model.
         test_ds (Dataset): The dataset for testing the model.
         epochs (int): The number of training epochs.
+        l2_penalty (float)
 
     Returns:
         tuple: 
@@ -132,15 +134,15 @@ def train_model(key, state, train_ds, test_ds, epochs,):
 
         for _, batch in enumerate(train_ds.as_numpy_iterator()):
             key, subkey = random.split(key)
-            state = train_step(state, batch, subkey,)
-            state = compute_metrics(state, batch, subkey,)
+            state = train_step(state, batch, subkey, l2_penalty)
+            state = compute_metrics(state, batch, subkey, l2_penalty)
 
         for metric, value in state.metrics.compute().items():
             metrics_history.append(f'train_{metric}', value)
         state = state.replace(metrics=state.metrics.empty())
 
         key, subkey = random.split(key)
-        compute_metrics_and_update_history(subkey, state, test_batch, 'test', metrics_history)
+        compute_metrics_and_update_history(subkey, state, test_batch, 'test', metrics_history, l2_penalty)
 
         # Check and store parameters for minimum test_loss
         current_test_loss = metrics_history.latest('test_loss')

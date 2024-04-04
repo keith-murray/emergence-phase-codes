@@ -4,6 +4,7 @@ from flax import linen as nn
 from modularRNN.model import CTRNNCell
 from modularRNN.task import ModularArithmeticTask
 from modularRNN.training import create_train_state, train_model
+from modularRNN.analysis import compute_cumulative_variance
 
 from functools import partial
 
@@ -22,13 +23,15 @@ with open(json_path, 'r') as f:
 seed = json_params.get('seed', 0)
 alpha = json_params.get('alpha', 0.1)
 noise = json_params.get('noise', 0.05)
-pulse_mean = json_params.get('pulse_mean', 8)
+pulse_mean = json_params.get('pulse_mean', 12)
 mod_set = json_params.get('mod_set', [5,])
 training_trials = json_params.get('training_trials', 3200)
 train_batch_size = json_params.get('train_batch_size', 128)
 testing_trials = json_params.get('testing_trials', 320)
 lr = json_params.get('lr', 0.001)
 epochs = json_params.get('epochs', 500)
+weight_decay = json_params.get('weight_decay', 0.0001)
+l2_penalty = json_params.get('l2_penalty', 0.0001)
 
 key = random.PRNGKey(seed)
 
@@ -46,7 +49,7 @@ noise = jnp.float32(noise)
 ctrnn = nn.RNN(CTRNNCell(features=features, alpha=alpha, noise=noise, out_shape=10,))
 
 key, subkey = random.split(key)
-state = create_train_state(ctrnn, subkey, lr,)
+state = create_train_state(ctrnn, subkey, lr, weight_decay)
 
 key, subkey = random.split(key)
 results = train_model(
@@ -55,8 +58,18 @@ results = train_model(
     training_dataset, 
     testing_dataset, 
     epochs,
+    l2_penalty,
 )
 
 results["final_params"].serialize(os.path.join(task_folder, 'final_params.bin'))
 results["min_test_loss_params"].serialize(os.path.join(task_folder, 'test_params.bin'))
 results["metrics_history"].save_to_csv(os.path.join(task_folder, 'metrics_history.csv'))
+
+key, subkey = random.split(key)
+compute_cumulative_variance(
+    ctrnn, 
+    results["min_test_loss_params"].params, 
+    training_dataset, 
+    subkey, 
+    os.path.join(task_folder, 'cumulative_variance.npy'),
+)
