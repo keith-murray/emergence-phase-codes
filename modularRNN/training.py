@@ -40,6 +40,13 @@ def train_step(state, batch, subkey, l2_penalty):
     return state
 
 @jax.jit
+def compute_custom_accuracy(output, label):
+    predicted_labels = jnp.argmax(output.reshape(-1, output.shape[-1]), axis=1)
+    actual_labels = jnp.argmax(label.reshape(-1, label.shape[-1]), axis=1)
+    accuracy = jnp.mean(predicted_labels == actual_labels)
+    return accuracy
+
+@jax.jit
 def compute_metrics(state, batch, subkey, l2_penalty):
     output, rates = state.apply_fn({'params': state.params}, batch[0], init_key=subkey)
     loss_task = optax.squared_error(output, batch[1]).mean()
