@@ -11,6 +11,7 @@ import pandas as pd
 @struct.dataclass
 class Metrics(metrics.Collection):
     loss: metrics.Average.from_output('loss') # type: ignore
+    accuracy: metrics.Average.from_output('accuracy') # type: ignore
 
 class TrainState(train_state.TrainState):
     metrics: Metrics
@@ -52,7 +53,8 @@ def compute_metrics(state, batch, subkey, l2_penalty):
     loss_task = optax.squared_error(output, batch[1]).mean()
     loss_rates = jnp.float32(l2_penalty) * optax.squared_error(rates).mean()
     loss = loss_task + loss_rates
-    metric_updates = state.metrics.single_from_model_output(loss=loss,)
+    accuracy = compute_custom_accuracy(output, batch[1])
+    metric_updates = state.metrics.single_from_model_output(loss=loss, accuracy=accuracy)
     metrics = state.metrics.merge(metric_updates)
     state = state.replace(metrics=metrics)
     return state
@@ -112,7 +114,7 @@ def compute_metrics_and_update_history(subkey, state, batch, metric_prefix, metr
     for metric, value in new_state.metrics.compute().items():
         metrics_history.append(f'{metric_prefix}_{metric}', value)
 
-def train_model(key, state, train_ds, test_ds, epochs, l2_penalty):
+def train_model(key, state, train_ds, test_ds, test_long_ds, epochs, l2_penalty):
     """
     Trains a model using provided datasets and records various performance metrics.
 
@@ -121,6 +123,7 @@ def train_model(key, state, train_ds, test_ds, epochs, l2_penalty):
         state (object): The initial state of the model, including parameters.
         train_ds (Dataset): The dataset for training the model.
         test_ds (Dataset): The dataset for testing the model.
+        test_long_ds (Dataset): The dataset for testing the temporal generalization.
         epochs (int): The number of training epochs.
         l2_penalty (float)
 
@@ -128,14 +131,19 @@ def train_model(key, state, train_ds, test_ds, epochs, l2_penalty):
         tuple: 
     """
     metrics_history = MetricsHistory([
-        'train_loss',
-        'test_loss',
+        'train_loss', 'train_accuracy',
+        'test_loss', 'test_accuracy',
+        'long_loss', 'long_accuracy',
     ])
 
     min_test_loss = float('inf')
     min_test_loss_params = None
+
+    min_long_loss = float('inf')
+    min_long_loss_params = None
     
     test_batch = list(test_ds.as_numpy_iterator())[0]
+    length_batch = list(test_long_ds.as_numpy_iterator())[0]
 
     for epoch in range(epochs):
 
@@ -150,12 +158,20 @@ def train_model(key, state, train_ds, test_ds, epochs, l2_penalty):
 
         key, subkey = random.split(key)
         compute_metrics_and_update_history(subkey, state, test_batch, 'test', metrics_history, l2_penalty)
+        key, subkey = random.split(key)
+        compute_metrics_and_update_history(subkey, state, length_batch, 'long', metrics_history, l2_penalty)
 
         # Check and store parameters for minimum test_loss
         current_test_loss = metrics_history.latest('test_loss')
         if current_test_loss < min_test_loss:
             min_test_loss = current_test_loss
             min_test_loss_params = ModelParameters(state)
+
+        # Check and store parameters for minimum long_loss
+        current_long_loss = metrics_history.latest('long_loss')
+        if current_long_loss < min_long_loss:
+            min_long_loss = current_long_loss
+            min_long_loss_params = ModelParameters(state)
 
         if (epoch+1) % 50 == 0:
             print(f'Metrics after epoch {epoch+1}:')
@@ -166,5 +182,6 @@ def train_model(key, state, train_ds, test_ds, epochs, l2_penalty):
     return {
         "final_params": model_params,
         "min_test_loss_params": min_test_loss_params,
+        "min_long_loss_params": min_long_loss_params,
         "metrics_history": metrics_history,
     }

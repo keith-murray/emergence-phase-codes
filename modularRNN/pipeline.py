@@ -26,8 +26,8 @@ noise = json_params.get('noise', 0.05)
 pulse_mean = json_params.get('pulse_mean', 12)
 mod_set = json_params.get('mod_set', [5,])
 training_trials = json_params.get('training_trials', 3200)
+testing_trials = json_params.get('testing_trials', 640)
 train_batch_size = json_params.get('train_batch_size', 128)
-testing_trials = json_params.get('testing_trials', 320)
 lr = json_params.get('lr', 0.001)
 epochs = json_params.get('epochs', 500)
 weight_decay = json_params.get('weight_decay', 0.0001)
@@ -51,6 +51,18 @@ modtask = ModularArithmeticTask(
 )
 training_dataset, testing_dataset = modtask.tf_datasets()
 
+key, subkey = random.split(key)
+modtask_long = ModularArithmeticTask(
+    subkey, 
+    640, 
+    640, 
+    640, 
+    mod_set, 
+    partial(random.poisson, lam=2*pulse_mean), 
+    500,
+)
+_, testing_dataset_long = modtask_long.tf_datasets()
+
 features = 100
 alpha = jnp.float32(alpha)
 noise = jnp.float32(noise)
@@ -66,12 +78,14 @@ results = train_model(
     state, 
     training_dataset, 
     testing_dataset, 
+    testing_dataset_long,
     epochs,
     l2_penalty,
 )
 
 results["final_params"].serialize(os.path.join(task_folder, 'final_params.bin'))
 results["min_test_loss_params"].serialize(os.path.join(task_folder, 'test_params.bin'))
+results["min_long_loss_params"].serialize(os.path.join(task_folder, 'long_params.bin'))
 results["metrics_history"].save_to_csv(os.path.join(task_folder, 'metrics_history.csv'))
 
 key, subkey = random.split(key)
