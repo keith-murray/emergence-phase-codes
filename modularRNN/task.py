@@ -5,7 +5,7 @@ from tqdm import tqdm
 import tensorflow as tf
 
 class ModularArithmeticTask:
-    def __init__(self, key, training_trials, testing_trials, train_batch_size, mod_set, pulse_distribution,):
+    def __init__(self, key, training_trials, testing_trials, train_batch_size, mod_set, pulse_distribution, trial_length):
         """
         Initialize the ModularArithmeticTask class to instantiate tasks.
         
@@ -16,6 +16,7 @@ class ModularArithmeticTask:
             train_batch_size (int): The size of training batches.
             mod_set (arr): The possible modular values for the task.
             pulse_distribution (function): The distribution of pulses per trial. The input is a PRNGKey.
+            trial_length (int): The length of the trial for the task
         """
         self.key = key
         self.training_trials = training_trials
@@ -23,6 +24,7 @@ class ModularArithmeticTask:
         self.train_batch_size = train_batch_size
         self.mod_set = mod_set
         self.pulse_distribution = pulse_distribution
+        self.trial_length = trial_length
         
     def generate_subkey(self,):
         """
@@ -72,7 +74,7 @@ class ModularArithmeticTask:
             # Could modify 100 to change trial length
             # pulse_indicies = random.permutation(self.generate_subkey(), 100)[:pulse_amount].sort()
             # valid_pulses = self.test_pulse_indicies(pulse_indicies)
-        pulse_indicies = random.permutation(self.generate_subkey(), 100)[:pulse_amount].sort()
+        pulse_indicies = random.permutation(self.generate_subkey(), self.trial_length)[:pulse_amount].sort()
         return pulse_indicies
     
     def generate_pulse_values(self, pulse_amount, mod_value):
@@ -93,7 +95,7 @@ class ModularArithmeticTask:
             pulses (arr)
             cumulative_mod (arr)
         """
-        pulses = jnp.zeros(100)
+        pulses = jnp.zeros(self.trial_length)
         pulses = pulses.at[pulse_indicies].set(pulse_values)
         cumulative_sum = jnp.cumsum(pulses)
         cumulative_mod = cumulative_sum % mod_value
@@ -109,7 +111,7 @@ class ModularArithmeticTask:
             input_tensor (arr)
             output_tensor (arr)
         """
-        mod_value_array = jnp.asarray(mod_value * jnp.ones(100), dtype=jnp.int32) # Again 100 could be variable
+        mod_value_array = jnp.asarray(mod_value * jnp.ones(self.trial_length), dtype=jnp.int32) # Again 100 could be variable
         mod_value_tensor = one_hot(mod_value_array, 12)[:, 2:]
 
         pulses_tensor = one_hot(pulses, 11)[:, 1:]

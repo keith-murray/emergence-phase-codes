@@ -15,9 +15,9 @@ class Metrics(metrics.Collection):
 class TrainState(train_state.TrainState):
     metrics: Metrics
 
-def create_train_state(module, subkey, learning_rate, weight_decay):
+def create_train_state(module, subkey, learning_rate, weight_decay, trial_length):
     """Creates an initial `TrainState`."""
-    params = module.init(subkey, jnp.ones([1, 100, 20]))['params'] # (batch, time, inputs)
+    params = module.init(subkey, jnp.ones([1, trial_length, 20]))['params'] # (batch, time, inputs)
     tx = optax.adamw(learning_rate, weight_decay=weight_decay)
     return TrainState.create(
         apply_fn=module.apply,

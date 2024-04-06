@@ -32,6 +32,7 @@ lr = json_params.get('lr', 0.001)
 epochs = json_params.get('epochs', 500)
 weight_decay = json_params.get('weight_decay', 0.0001)
 l2_penalty = json_params.get('l2_penalty', 0.0001)
+trial_length = json_params.get('trial_length', 100)
 
 key = random.PRNGKey(seed)
 
@@ -39,7 +40,15 @@ mod_set = jnp.array(mod_set)
 pulse_distribution = partial(random.poisson, lam=pulse_mean)
 
 key, subkey = random.split(key)
-modtask = ModularArithmeticTask(subkey, training_trials, testing_trials, train_batch_size, mod_set, pulse_distribution,)
+modtask = ModularArithmeticTask(
+    subkey, 
+    training_trials, 
+    testing_trials, 
+    train_batch_size, 
+    mod_set, 
+    pulse_distribution, 
+    trial_length,
+)
 training_dataset, testing_dataset = modtask.tf_datasets()
 
 features = 100
@@ -49,7 +58,7 @@ noise = jnp.float32(noise)
 ctrnn = nn.RNN(CTRNNCell(features=features, alpha=alpha, noise=noise, out_shape=10,))
 
 key, subkey = random.split(key)
-state = create_train_state(ctrnn, subkey, lr, weight_decay)
+state = create_train_state(ctrnn, subkey, lr, weight_decay, trial_length)
 
 key, subkey = random.split(key)
 results = train_model(
