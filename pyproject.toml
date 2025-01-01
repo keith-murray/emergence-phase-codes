@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "recurrent-networks-oscillate"
+version = "0.1.0"
+description = "Code for 'Recurrent networks recognize patterns with low-dimensional oscillations'"
+authors = ["Keith T. Murray <murraykeith64@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+ctrnn-jax = {git = "https://github.com/keith-murray/ctrnn-jax.git", rev = "995c9ab"}
+
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^4.0.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
