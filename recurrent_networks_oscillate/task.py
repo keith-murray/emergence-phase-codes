@@ -112,18 +112,6 @@ class Modulo3Arithmetic:
             else:
                 self.integer_sequences[integer_sequence] = 1
 
-    def print_integer_sequences(
-        self,
-    ):
-        """
-        Print the contents of integer_sequences with integer sequences
-        in the first column and the label in the second column.
-        """
-        print("Contents of integer_sequences dictionary:")
-        print("Integer sequence | Label")
-        for sequence, label in self.integer_sequences.items():
-            print(f"{sequence} | {label}")
-
     def create_trial(
         self,
         integer_sequence,
@@ -268,41 +256,6 @@ class Modulo3Arithmetic:
                     for _ in range(min_trials)
                 ]
 
-    def print_data_dict(self, data_dict):
-        """
-        Print two grids. One grid has all the positive label integer sequences,
-        and the other grid has all the negative label integer sequences.
-
-        Parameters:
-            data_dict (dict): The data dictionary containing trials.
-        """
-        print("Accepting Grid:")
-        print("Integer Sequence | Number of Trials")
-        for seq in data_dict:
-            label = self.check_and_return_label(data_dict, seq)
-            if label == 1:
-                print(f"{seq} | {len(data_dict[seq])}")
-
-        print("\nRejecting Grid:")
-        print("Integer Sequence | Number of Trials")
-        for seq in data_dict:
-            label = self.check_and_return_label(data_dict, seq)
-            if label == -1:
-                print(f"{seq} | {len(data_dict[seq])}")
-
-    def print_training_testing(
-        self,
-    ):
-        """
-        Print all relevant information pertaining to training and testing dicts.
-        """
-        print("\nTRAINING DATA\n")
-        self.print_data_dict(self.training_dict)
-        print("\n----------")
-        print("\nTESTING DATA\n")
-        self.print_data_dict(self.testing_dict)
-        print("\n")
-
     def generate_jax_tensor(self, data_dict):
         """
         Create features and labels tensors for the tensorflow dataset.
@@ -380,3 +333,38 @@ class Modulo3Arithmetic:
         )
 
         return training_tf_dataset, testing_tf_dataset
+
+    def print_data_dict(self, data_dict):
+        """
+        Print two grids. One grid has all the positive label integer sequences,
+        and the other grid has all the negative label integer sequences.
+
+        Parameters:
+            data_dict (dict): The data dictionary containing trials.
+        """
+        print("Accepting Grid:")
+        print("Integer Sequence | Number of Trials")
+        for seq in data_dict:
+            label = self.check_and_return_label(data_dict, seq)
+            if label == 1:
+                print(f"{seq} | {len(data_dict[seq])}")
+
+        print("\nRejecting Grid:")
+        print("Integer Sequence | Number of Trials")
+        for seq in data_dict:
+            label = self.check_and_return_label(data_dict, seq)
+            if label == -1:
+                print(f"{seq} | {len(data_dict[seq])}")
+
+    def print_training_testing(
+        self,
+    ):
+        """
+        Print all relevant information pertaining to training and testing dicts.
+        """
+        print("\nTRAINING DATA\n")
+        self.print_data_dict(self.training_dict)
+        print("\n----------")
+        print("\nTESTING DATA\n")
+        self.print_data_dict(self.testing_dict)
+        print("\n")
