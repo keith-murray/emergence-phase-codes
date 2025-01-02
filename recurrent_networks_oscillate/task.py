@@ -277,14 +277,14 @@ class Modulo3Arithmetic:
             data_dict (dict): The data dictionary containing trials.
         """
         print("Accepting Grid:")
-        print("Integer Sequence | Number of Trials | Status")
+        print("Integer Sequence | Number of Trials")
         for seq in data_dict:
             label = self.check_and_return_label(data_dict, seq)
             if label == 1:
                 print(f"{seq} | {len(data_dict[seq])}")
 
         print("\nRejecting Grid:")
-        print("Integer Sequence | Number of Trials | Status")
+        print("Integer Sequence | Number of Trials")
         for seq in data_dict:
             label = self.check_and_return_label(data_dict, seq)
             if label == -1:
