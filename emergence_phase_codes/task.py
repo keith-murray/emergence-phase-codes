@@ -1,4 +1,4 @@
-# pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-instance-attributes,too-many-lines
+# pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-instance-attributes
 """Implementation of modular arithmetic task."""
 
 from itertools import product
@@ -104,7 +104,7 @@ class ModuloNArithmetic:
 
         Returns:
             tuple:
-                - input_array (jnp.ndarray): Shape (time_length, M), one-hot pulses over time.
+                - input_array (jnp.ndarray): Shape (time_length, mod), one-hot pulses over time.
                 - output_array (jnp.ndarray): Shape (time_length, 1), tiled label (+1 or -1).
         """
         invalid_indices = True
@@ -115,6 +115,40 @@ class ModuloNArithmetic:
             )
             pulse_indices = jnp.sort(pulse_indices) + self.pulse_buffer
             invalid_indices = self.sampling_check(pulse_indices)
+
+        input_array = jnp.zeros((self.time_length, self.mod))
+
+        for idx, val in zip(pulse_indices, sequence):
+            onehot_vector = jnp.zeros((self.mod,)).at[val].set(self.pulse_amplitude)
+            input_array = input_array.at[idx].add(onehot_vector)
+            input_array = input_array.at[idx + 1].add(onehot_vector)
+
+        modulo_sum = sequence.sum() % self.mod
+        label_value = 1.0 if modulo_sum == self.congruent_number else -1.0
+        output_array = jnp.tile(jnp.array([label_value]), (self.time_length, 1))
+
+        return input_array, output_array
+
+    def create_trial_with_indices(self, sequence, pulse_indices):
+        """
+        Create a single trial with a specific sequence of integers and fixed pulse indices.
+
+        Args:
+            sequence (jnp.ndarray): 1D array of length `num_pulses`, integers in [0, M-1].
+            pulse_indices (jnp.ndarray): 1D array of length `num_pulses`, sorted time indices
+                                        at which to place each pulse.
+
+        Returns:
+            tuple:
+                - input_array (jnp.ndarray): Shape (time_length, mod), one-hot pulses over time.
+                - output_array (jnp.ndarray): Shape (time_length, 1), tiled label (+1 or -1).
+        """
+        assert len(sequence) == len(
+            pulse_indices
+        ), "Sequence and indices must be the same length"
+        assert not self.sampling_check(
+            pulse_indices
+        ), "Pulse indices must satisfy gap requirement"
 
         input_array = jnp.zeros((self.time_length, self.mod))
 
@@ -206,7 +240,7 @@ class ModuloNArithmetic:
 
         Returns:
             tuple:
-                - features_tensor (jnp.ndarray): Shape (num_trials, time_length, M).
+                - features_tensor (jnp.ndarray): Shape (num_trials, time_length, mod).
                 - labels_tensor (jnp.ndarray): Shape (num_trials, time_length, 1).
         """
         features = []
@@ -245,7 +279,7 @@ class ModuloNArithmetic:
         Decode a sequence of one-hot vectors into integers or None if no pulse.
 
         Args:
-            input_array (jnp.ndarray): Shape (time_length, M).
+            input_array (jnp.ndarray): Shape (time_length, mod).
 
         Returns:
             list: A list of integers (0 to M-1) or None for each time step.
