@@ -1,14 +1,15 @@
 [tool.poetry]
-name = "recurrent-networks-oscillate"
+name = "emergence-phase-codes"
 version = "0.1.0"
-description = "Code for 'Recurrent networks recognize patterns with low-dimensional oscillations'"
+description = "Code for 'Emergence of phase codes in recurrent networks trained to perform modular arithmetic'"
 authors = ["Keith T. Murray <murraykeith64@gmail.com>"]
 license = "MIT"
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-ctrnn-jax = {git = "https://github.com/keith-murray/ctrnn-jax.git", rev = "995c9ab"}
+ctrnn-jax = {git = "https://github.com/keith-murray/ctrnn-jax.git", rev = "48689cb"}
+jupyterlab = "^4.4.2"
 
 
 [tool.poetry.group.dev.dependencies]
