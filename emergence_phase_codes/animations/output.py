@@ -59,7 +59,7 @@ class OutputAnimator:
                 0,
                 init_pt,
                 color=self.trajectory_colors[idx][-1],
-                marker="o",
+                marker="D",
                 s=150,
                 edgecolors="black",
                 zorder=3,
@@ -95,8 +95,8 @@ class OutputAnimator:
                     self.time[t - 1] / self.time[-1],  # Normalize time
                     self.time[min(t + 1, time_steps - 1)] / self.time[-1],
                     facecolor=self.stimulus_colors[integer],
-                    alpha=0.5,
                     edgecolor="black",
+                    alpha=0.5,
                 )
                 skip = True
 
@@ -147,7 +147,7 @@ class OutputAnimator:
 
         for label in self.stimulus_colors:
             self.ax.scatter(
-                [], [], color=self.stimulus_colors[label], label=label, s=50, alpha=0.8
+                [], [], color=self.stimulus_colors[label], label=label, s=50, alpha=0.5
             )
 
         self.ax.legend(loc=legend_loc, fontsize=12, frameon=True)
