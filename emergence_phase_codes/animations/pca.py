@@ -21,6 +21,7 @@ class PCATrajectoryAnimator:
         title,
         pc_z=None,
         stimulus_colors=None,
+        null_trajectory=None,
     ):
         """
         Parameters:
@@ -35,6 +36,7 @@ class PCATrajectoryAnimator:
                              keyed by trajectory index.
           title: Title for the axis.
         stimulus_colors: dictionary mapping integers to colors.
+        null_trajectory: Optional trajectory (jnp.array) to outline dynamics.
         """
         self.ax = ax
         self.title = title
@@ -136,6 +138,38 @@ class PCATrajectoryAnimator:
                     (line,) = self.ax.plot3D([], [], [], linewidth=2)
                 self.line_dict[idx].append(line)
 
+        if null_trajectory is not None:
+            assert (
+                null_trajectory.shape == model_behavior["rates_pc"][0, :, :].shape
+            ), "Unexpected example_trajectory shape"
+            if self.pc_z is None:
+                self.null_trajectory = null_trajectory[
+                    :, [pc_x - 1, pc_y - 1]
+                ]  # shape (n_time, 2)
+                (line,) = self.ax.plot(
+                    [],
+                    [],
+                    color="tab:gray",
+                    zorder=1.5,
+                    linewidth=2,
+                    ls="--",
+                )
+            else:
+                self.null_trajectory = null_trajectory[
+                    :, [pc_x - 1, pc_y - 1, pc_z - 1]
+                ]  # shape (n_time, 3)
+                (line,) = self.ax.plot3D(
+                    [],
+                    [],
+                    color="tab:gray",
+                    zorder=0.9,
+                    linewidth=2,
+                    ls="--",
+                )
+            self.null_line = line
+        else:
+            self.null_trajectory = None
+
     def update(self, frame):
         """
         Update the animation to the given frame.
@@ -174,6 +208,17 @@ class PCATrajectoryAnimator:
                 # For 3D scatter, update the _offsets3d attribute.
                 self.scatter_dict[idx]._offsets3d = ([pt[0]], [pt[1]], [pt[2]])
             updated_artists.append(self.scatter_dict[idx])
+
+        if self.null_trajectory is not None:
+            line_segment = self.null_trajectory[:frame, :]
+            if self.pc_z is None:
+                self.null_line.set_data(line_segment[:, 0], line_segment[:, 1])
+            else:
+                self.null_line.set_data_3d(
+                    line_segment[:, 0], line_segment[:, 1], line_segment[:, 2]
+                )
+            updated_artists.append(self.null_line)
+
         return updated_artists
 
     def color_integer_points(
@@ -227,7 +272,7 @@ class PCAPopulationAnimator:
         title,
         highlight_indices=None,
         pc_z=None,
-        example_trajectory=None,
+        null_trajectory=None,
         final_output_index=None,
     ):
         """
@@ -242,7 +287,7 @@ class PCAPopulationAnimator:
         classification_color_map: dict mapping classification values (e.g. -1, 1) to colors.
         title: Title for the axis.
         highlight_indices: Optional list of trial indices to mark specially.
-        example_trajectory: Optional trajectory (jnp.array) to outline dynamics.
+        null_trajectory: Optional trajectory (jnp.array) to outline dynamics.
         """
         self.ax = ax
         self.title = title
@@ -369,12 +414,12 @@ class PCAPopulationAnimator:
         else:
             self.highlight_scatter = None
 
-        if example_trajectory is not None:
+        if null_trajectory is not None:
             assert (
-                example_trajectory.shape == model_behavior["rates_pc"][0, :, :].shape
+                null_trajectory.shape == model_behavior["rates_pc"][0, :, :].shape
             ), "Unexpected example_trajectory shape"
             if self.dim == 2:
-                self.example_trajectory = example_trajectory[
+                self.null_trajectory = null_trajectory[
                     :, [pc_x - 1, pc_y - 1]
                 ]  # shape (n_time, 2)
                 (line,) = self.ax.plot(
@@ -386,7 +431,7 @@ class PCAPopulationAnimator:
                     ls="--",
                 )
             else:
-                self.example_trajectory = example_trajectory[
+                self.null_trajectory = null_trajectory[
                     :, [pc_x - 1, pc_y - 1, pc_z - 1]
                 ]  # shape (n_time, 3)
                 (line,) = self.ax.plot3D(
@@ -397,9 +442,9 @@ class PCAPopulationAnimator:
                     linewidth=2,
                     ls="--",
                 )
-            self.example_line = line
+            self.null_line = line
         else:
-            self.example_trajectory = None
+            self.null_trajectory = None
 
     def update(self, frame_pre_clip):
         """
@@ -431,15 +476,15 @@ class PCAPopulationAnimator:
                 self.highlight_scatter._offsets3d = (hpos[:, 0], hpos[:, 1], hpos[:, 2])
             updated_artists.append(self.highlight_scatter)
 
-        if self.example_trajectory is not None:
-            line_segment = self.example_trajectory[:frame_pre_clip, :]
+        if self.null_trajectory is not None:
+            line_segment = self.null_trajectory[:frame_pre_clip, :]
             if self.dim == 2:
-                self.example_line.set_data(line_segment[:, 0], line_segment[:, 1])
+                self.null_line.set_data(line_segment[:, 0], line_segment[:, 1])
             else:
-                self.example_line.set_data_3d(
+                self.null_line.set_data_3d(
                     line_segment[:, 0], line_segment[:, 1], line_segment[:, 2]
                 )
-            updated_artists.append(self.example_line)
+            updated_artists.append(self.null_line)
         return updated_artists
 
     def figure(self):
