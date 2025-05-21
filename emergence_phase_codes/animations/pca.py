@@ -201,7 +201,7 @@ class PCATrajectoryAnimator:
                     marker="o",
                     s=200,
                     zorder=1,
-                    alpha=0.5,
+                    alpha=0.8,
                 )
                 skip = True
 
@@ -378,14 +378,24 @@ class PCAPopulationAnimator:
                     :, [pc_x - 1, pc_y - 1]
                 ]  # shape (n_time, 2)
                 (line,) = self.ax.plot(
-                    [], [], color="tab:gray", zorder=1.5, linewidth=2
+                    [],
+                    [],
+                    color="tab:gray",
+                    zorder=1.5,
+                    linewidth=2,
+                    ls="--",
                 )
             else:
                 self.example_trajectory = example_trajectory[
                     :, [pc_x - 1, pc_y - 1, pc_z - 1]
                 ]  # shape (n_time, 3)
                 (line,) = self.ax.plot3D(
-                    [], [], color="tab:gray", zorder=1.5, linewidth=2
+                    [],
+                    [],
+                    color="tab:gray",
+                    zorder=1.5,
+                    linewidth=2,
+                    ls="--",
                 )
             self.example_line = line
         else:

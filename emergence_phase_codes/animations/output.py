@@ -38,6 +38,7 @@ class OutputAnimator:
         self.ax.set_title(title)
         self.ax.set_xlabel("Time (s)")
         self.ax.set_ylabel("Model output")
+        self.ax.axhline(y=0, ls="--", lw=2, alpha=0.5, color="tab:grey")
 
         # Number of time points (assumed same for all trajectories).
         self.n_time = list(self.trajectories.values())[0].shape[0]
@@ -147,7 +148,7 @@ class OutputAnimator:
 
         for label in self.stimulus_colors:
             self.ax.scatter(
-                [], [], color=self.stimulus_colors[label], label=label, s=50, alpha=0.5
+                [], [], color=self.stimulus_colors[label], label=label, s=50, alpha=0.8
             )
 
         self.ax.legend(loc=legend_loc, fontsize=12, frameon=True)
