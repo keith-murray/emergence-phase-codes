@@ -148,7 +148,7 @@ class OutputAnimator:
 
         for label in self.stimulus_colors:
             self.ax.scatter(
-                [], [], color=self.stimulus_colors[label], label=label, s=50, alpha=0.8
+                [], [], color=self.stimulus_colors[label], label=label, s=100, alpha=0.8
             )
 
         self.ax.legend(loc=legend_loc, fontsize=12, frameon=True)
