@@ -128,6 +128,70 @@ def train_model(
     return state, metrics_history
 
 
+# pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
+def train_model_with_validation(
+    key,
+    epochs,
+    state,
+    tf_dataset_train,
+    tf_dataset_val,
+    time_index,
+    rate_penalty,
+    tqdm_disable=False,
+):
+    """Train model on task with validation set and track best model."""
+
+    metrics_history = {
+        "train_loss": [],
+        "train_accuracy": [],
+        "val_loss": [],
+        "val_accuracy": [],
+    }
+
+    best_val_loss = float("inf")
+    best_params = None
+    best_val_metrics = {}
+
+    for _ in tqdm(range(epochs), disable=tqdm_disable):
+        # Training step
+        for _, batch in enumerate(tf_dataset_train.as_numpy_iterator()):
+            key, train_key, metrics_key = random.split(key, num=3)
+            state = train_step(
+                train_key,
+                state,
+                batch,
+                time_index,
+                rate_penalty,
+            )
+            state = compute_metrics(metrics_key, state, batch, index=time_index)
+
+        # Compute and store training metrics
+        train_metrics = state.metrics.compute()
+        metrics_history["train_loss"].append(train_metrics["loss"].item())
+        metrics_history["train_accuracy"].append(train_metrics["accuracy"].item())
+        state = state.replace(metrics=state.metrics.empty())
+
+        # Validation step
+        for _, batch in enumerate(tf_dataset_val.as_numpy_iterator()):
+            key, metrics_key = random.split(key)
+            state = compute_metrics(metrics_key, state, batch, index=time_index)
+
+        val_metrics = state.metrics.compute()
+        val_loss = val_metrics["loss"].item()
+        val_accuracy = val_metrics["accuracy"].item()
+        metrics_history["val_loss"].append(val_loss)
+        metrics_history["val_accuracy"].append(val_accuracy)
+        state = state.replace(metrics=state.metrics.empty())
+
+        # Track best parameters
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            best_val_metrics = {"loss": val_loss, "accuracy": val_accuracy}
+            best_params = state.params
+
+    return state, best_params, best_val_metrics, metrics_history
+
+
 def plot_training_loss_accuracy(epochs, metrics_history, save_loc=False, show=True):
     """Standard plotting function for training loss and accuracy."""
     # Visualize training metrics
