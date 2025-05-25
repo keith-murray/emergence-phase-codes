@@ -10,6 +10,9 @@ readme = "README.md"
 python = "^3.12"
 ctrnn-jax = {git = "https://github.com/keith-murray/ctrnn-jax.git", rev = "48689cb"}
 jupyterlab = "^4.4.2"
+dsa = {git = "https://github.com/mitchellostrow/DSA"}
+pandas = "^2.2.3"
+omegaconf = "^2.3.0"
 
 
 [tool.poetry.group.dev.dependencies]
