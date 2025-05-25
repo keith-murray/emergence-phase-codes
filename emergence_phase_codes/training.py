@@ -149,7 +149,7 @@ def train_model_with_validation(
     }
 
     best_val_loss = float("inf")
-    best_params = None
+    best_state = None
     best_val_metrics = {}
 
     for _ in tqdm(range(epochs), disable=tqdm_disable):
@@ -187,9 +187,9 @@ def train_model_with_validation(
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             best_val_metrics = {"loss": val_loss, "accuracy": val_accuracy}
-            best_params = state.params
+            best_state = state
 
-    return state, best_params, best_val_metrics, metrics_history
+    return state, best_state, best_val_metrics, metrics_history
 
 
 def plot_training_loss_accuracy(epochs, metrics_history, save_loc=False, show=True):
