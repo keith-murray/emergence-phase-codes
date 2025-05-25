@@ -41,8 +41,7 @@ def main():
             "task_dir": task_dir,
         }
 
-        # pylint: disable=unspecified-encoding
-        with open(os.path.join(task_dir, "params.json"), "w") as f:
+        with open(os.path.join(task_dir, "params.json"), "w", encoding="utf-8") as f:
             json.dump(params, f, indent=2)
 
 
