@@ -2,7 +2,7 @@
 
 import jax.numpy as jnp
 from flax import linen as nn
-from flax.linen.activation import tanh, sigmoid
+from flax.linen.activation import tanh, sigmoid, relu
 
 from ctrnn_jax.model import CTRNNCell
 
@@ -33,6 +33,7 @@ def initialize_ctrnn_with_activation(
     activation_dict = {
         "tanh": tanh,
         "sigmoid": sigmoid,
+        "relu": relu,
     }
     return nn.RNN(
         CTRNNCell(
