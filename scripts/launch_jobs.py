@@ -4,14 +4,14 @@ import os
 import subprocess
 from multiprocessing import Pool
 
-N_PARALLEL = 5
+N_PARALLEL = 6
 BASE_DIR = "./jobs"
 
 
 def train_job(task_dir):
     """Function to call `pipeline.py` with pointer to json config."""
     params_path = os.path.join(BASE_DIR, task_dir, "params.json")
-    subprocess.run(["python", "scripts/pipeline.py", params_path], check=False)
+    subprocess.run(["python", "scripts/training_pipeline.py", params_path], check=False)
 
 
 def main():

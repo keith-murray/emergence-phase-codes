@@ -10,7 +10,7 @@ from jax import random
 
 from ctrnn_jax.training import ModelParameters, create_train_state
 
-from emergence_phase_codes.model import initialize_ctrnn
+from emergence_phase_codes.model import initialize_ctrnn_with_activation
 from emergence_phase_codes.task import ModuloNArithmetic
 from emergence_phase_codes.training import train_model_with_validation
 
@@ -42,11 +42,12 @@ def main(params_path):
     dataset = task.generate_tf_dataset(16)
 
     # Initialize model
-    model = initialize_ctrnn(
+    model = initialize_ctrnn_with_activation(
         hidden_features=100,
         output_features=1,
         alpha=config["alpha"],
         noise_const=config["noise"],
+        activation_fn=config["activation_fn"],
     )
 
     # Create training state
@@ -85,13 +86,25 @@ def main(params_path):
         writer = csv.writer(csvfile)
         if not file_exists:
             writer.writerow(
-                ["seed", "best_validation_loss", "best_validation_accuracy"]
+                [
+                    "seed",
+                    "best_validation_loss",
+                    "best_validation_accuracy",
+                    "alpha",
+                    "noise",
+                    "activation_fn",
+                    "model_path",
+                ]
             )
         writer.writerow(
             [
                 config["seed"],
                 float(best_metrics["loss"]),
                 float(best_metrics["accuracy"]),
+                config["alpha"],
+                config["noise"],
+                config["activation_fn"],
+                model_path,
             ]
         )
 
