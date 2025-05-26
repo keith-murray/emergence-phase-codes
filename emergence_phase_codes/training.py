@@ -198,7 +198,20 @@ def plot_training_loss_accuracy(epochs, metrics_history, save_loc=False, show=Tr
     _, axs = plt.subplots(1, 2, figsize=(12, 5))
 
     # Panel 1: Loss over training epochs
-    axs[0].plot(jnp.arange(epochs), metrics_history["train_loss"], label="Train Loss")
+    axs[0].plot(
+        jnp.arange(epochs),
+        metrics_history["train_loss"],
+        label="Train",
+        color="tab:blue",
+    )
+    if "val_loss" in metrics_history:
+        axs[0].plot(
+            jnp.arange(epochs),
+            metrics_history["val_loss"],
+            label="Validation",
+            color="tab:orange",
+        )
+
     axs[0].set_title("Loss over training epochs")
     axs[0].set_xlabel("Training epoch")
     axs[0].set_ylabel("Mean squared error")
@@ -208,9 +221,17 @@ def plot_training_loss_accuracy(epochs, metrics_history, save_loc=False, show=Tr
     axs[1].plot(
         jnp.arange(epochs),
         metrics_history["train_accuracy"],
-        label="Train Accuracy",
-        color="orange",
+        label="Train",
+        color="tab:blue",
     )
+    if "val_accuracy" in metrics_history:
+        axs[1].plot(
+            jnp.arange(epochs),
+            metrics_history["val_accuracy"],
+            label="Validation",
+            color="tab:orange",
+        )
+
     axs[1].set_title("Accuracy over training epochs")
     axs[1].set_xlabel("Training epoch")
     axs[1].set_ylabel("Percentage correct")
