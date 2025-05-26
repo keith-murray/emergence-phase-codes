@@ -12,7 +12,10 @@ from ctrnn_jax.training import ModelParameters, create_train_state
 
 from emergence_phase_codes.model import initialize_ctrnn_with_activation
 from emergence_phase_codes.task import ModuloNArithmetic
-from emergence_phase_codes.training import train_model_with_validation
+from emergence_phase_codes.training import (
+    train_model_with_validation,
+    plot_training_loss_accuracy,
+)
 
 
 # pylint: disable=too-many-locals
@@ -63,20 +66,29 @@ def main(params_path):
     validation_dataset = task.generate_tf_dataset(16)
 
     # Train model with validation
-    train_state, best_params, best_metrics, _ = train_model_with_validation(
-        key,
+    train_state, best_params, best_metrics, metrics_history = (
+        train_model_with_validation(
+            key,
+            config["epochs"],
+            train_state,
+            dataset,
+            validation_dataset,
+            config["time_index"],
+            config["rate_penalty"],
+        )
+    )
+
+    # Plot metric history
+    plot_training_loss_accuracy(
         config["epochs"],
-        train_state,
-        dataset,
-        validation_dataset,
-        config["time_index"],
-        config["rate_penalty"],
+        metrics_history,
+        save_loc=os.path.join(config["task_dir"], "metrics_history.png"),
+        show=False,
     )
 
     # Save best model
     model_params = ModelParameters(best_params)
-    model_path = os.path.join(config["task_dir"], "model.bin")
-    model_params.serialize(model_path)
+    model_params.serialize(os.path.join(config["task_dir"], "model.bin"))
 
     # Save best validation metrics to CSV
     metrics_path = os.path.join("./data/", "validation_metrics.csv")
@@ -93,7 +105,7 @@ def main(params_path):
                     "alpha",
                     "noise",
                     "activation_fn",
-                    "model_path",
+                    "task_dir",
                 ]
             )
         writer.writerow(
@@ -104,7 +116,7 @@ def main(params_path):
                 config["alpha"],
                 config["noise"],
                 config["activation_fn"],
-                model_path,
+                config["task_dir"],
             ]
         )
 
