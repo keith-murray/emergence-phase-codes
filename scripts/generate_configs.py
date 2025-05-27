@@ -13,7 +13,7 @@ def main():
     # Candidate values for different hyperparameters
     alpha_values = [0.1, 0.5, 1.0]
     noise_values = [0.00, 0.05, 0.10]
-    activation_functions = ["tanh", "sigmoid"]
+    activation_functions = ["tanh", "relu"]
     job_combinations = list(product(alpha_values, noise_values, activation_functions))
 
     for seed, (alpha, noise, activation_fn) in enumerate(job_combinations):
@@ -25,7 +25,7 @@ def main():
             "alpha": alpha,
             "noise": noise,
             "activation_fn": activation_fn,
-            "epochs": 10,
+            "epochs": 100,
             "learning_rate": 1e-4,
             "rate_penalty": 1e-4,
             "time_index": -3,
