@@ -1,27 +1,30 @@
 """Pipeline to run DSA on trained models."""
 
 import os
-import json
 
 import numpy as np
 import jax.numpy as jnp
 from jax import random
 
-import matplotlib.pyplot as plt
 import pandas as pd
 from tqdm import tqdm
 from sklearn.manifold import MDS
 
+import matplotlib.pyplot as plt
+from matplotlib import cm
+import matplotlib.colors as mcolors
+
 from ctrnn_jax.training import create_train_state, ModelParameters
 from DSA import DSA
 
-from emergence_phase_codes.model import initialize_ctrnn
+from emergence_phase_codes.model import initialize_ctrnn_with_activation
 from emergence_phase_codes.task import ModuloNArithmetic
 from emergence_phase_codes.training import compute_classification_accuracy
 
 
 # Load validation metrics
 val_metrics = pd.read_csv("./data/validation_metrics.csv")
+val_metrics = val_metrics.sort_values(by="seed")
 
 # Parameters
 MOD = 3
@@ -35,7 +38,7 @@ PULSE_CONFIG = {
     "pulse_amplitude": 5,
 }
 TIME_LENGTH = 50
-NUM_TRIALS = 100
+NUM_TRIALS = 1000
 JOBS_PATH = "./jobs"
 
 # Create a shared M3A test dataset
@@ -51,49 +54,33 @@ task = ModuloNArithmetic(
 )
 test_inputs, test_targets = task.generate_jax_tensor()
 
-# Create the base model
-model = initialize_ctrnn(
-    hidden_features=HIDDEN_SIZE,
-    output_features=OUTPUT_SIZE,
-    alpha=1.0,
-    noise_const=0,  # For analyzing dynamics, noise is always set to 0
-)
-
-
 # Run all models on the test data
 rates_list = []
-for job_dir in tqdm(sorted(os.listdir(JOBS_PATH))):
-    # Load seed from params.json in same folder
-    params_path = os.path.join(JOBS_PATH, job_dir, "params.json")
-    with open(params_path, "r", encoding="utf-8") as f:
-        config = json.load(f)
-    seed = config["seed"]
-    alpha = config["alpha"]
-
+alphas = []
+markers = []
+for _, row in tqdm(val_metrics.iterrows(), total=len(val_metrics)):
     # Retrieve validation accuracy
-    val_row = val_metrics[val_metrics["seed"] == seed]
-    if val_row.empty:
-        continue
-    csv_accuracy = val_row["best_validation_accuracy"].values[0]
+    csv_accuracy = row["best_validation_accuracy"]
 
     # Re-initialize model
-    model = initialize_ctrnn(
+    model = initialize_ctrnn_with_activation(
         hidden_features=HIDDEN_SIZE,
         output_features=OUTPUT_SIZE,
-        alpha=alpha,
+        alpha=row["alpha"],
         noise_const=0,  # For analyzing dynamics, noise is always set to 0
+        activation_fn=row["activation_fn"],
     )
     key, train_state_key = random.split(key, num=2)
     model_state = create_train_state(
         train_state_key,
         model,
-        1e-4,
+        1e-4,  # Just an example learning rate
         jnp.ones([16, TIME_LENGTH, MOD]),
     )
 
     # Load parameters
     params = ModelParameters(model_state)
-    params.deserialize(os.path.join(JOBS_PATH, job_dir, "model.bin"))
+    params.deserialize(os.path.join(row["task_dir"], "model.bin"))
 
     # Run model
     key, subkey = random.split(key)
@@ -102,29 +89,64 @@ for job_dir in tqdm(sorted(os.listdir(JOBS_PATH))):
         params.params, test_inputs, rngs={"noise_stream": subkey}
     )
 
+    # Compute test accuracy
     accuracy = compute_classification_accuracy(
         output[:, -1, -1], test_targets[:, -1, -1]
     )
 
-    if accuracy > 0.95 and csv_accuracy > 0.95:
-        rates_list.append(np.asarray(rates))
-    else:
-        continue
+    print(f"Validation accuracy: {csv_accuracy}\nTesting accuracy: {accuracy}")
+    rates_list.append(np.asarray(rates))
+    alphas.append(row["alpha"])
+    markers.append(row["activation_fn"])
 
 # Step 4: Run DSA
 print("Running DSA...")
-dsa = DSA(rates_list, verbose=True)
+dsa = DSA(rates_list, rank=30, verbose=True, iters=1000, lr=1e-2)
 similarity_matrix = dsa.fit_score()
 
 # Step 5: Visualize with MDS
 embedding = MDS(dissimilarity="precomputed").fit_transform(1 - similarity_matrix)
 
-plt.figure(figsize=(6, 6))
-plt.scatter(embedding[:, 0], embedding[:, 1])
+fig, ax = plt.subplots(figsize=(6, 6))
+
+marker_dict = {
+    "tanh": "o",
+    "relu": "s",
+}
+# pylint: disable=no-member
+cmap = cm.cool
+norm = mcolors.Normalize(vmin=min(alphas), vmax=max(alphas))
+seen = set()
+for i in range(len(embedding)):
+    label = markers[i]
+    if label not in seen:
+        ax.scatter(
+            embedding[i, 0],
+            embedding[i, 1],
+            c=[cmap(norm(alphas[i]))],
+            marker=marker_dict.get(markers[i], "o"),
+            label=label,
+            edgecolors="black",
+        )
+        seen.add(label)
+    else:
+        ax.scatter(
+            embedding[i, 0],
+            embedding[i, 1],
+            c=[cmap(norm(alphas[i]))],
+            marker=marker_dict.get(markers[i], "o"),
+            edgecolors="black",
+        )
+
 plt.title("DSA MDS Embedding of CT-RNN Solutions")
 plt.xlabel("Component 1")
 plt.ylabel("Component 2")
 plt.grid(True)
 plt.tight_layout()
+plt.legend(title="Activation Function")
+sm = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
+sm.set_array([])
+cbar = fig.colorbar(sm, ax=ax)
+cbar.set_label("Alpha")
 plt.savefig("./results/dsa_mds_embedding.png")
 plt.show()
