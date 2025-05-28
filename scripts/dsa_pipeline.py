@@ -38,7 +38,7 @@ PULSE_CONFIG = {
     "pulse_amplitude": 5,
 }
 TIME_LENGTH = 50
-NUM_TRIALS = 1000
+NUM_TRIALS = 1500
 JOBS_PATH = "./jobs"
 
 # Create a shared M3A test dataset
@@ -101,11 +101,20 @@ for _, row in tqdm(val_metrics.iterrows(), total=len(val_metrics)):
 
 # Step 4: Run DSA
 print("Running DSA...")
-dsa = DSA(rates_list, rank=30, verbose=True, iters=1000, lr=1e-2)
+dsa = DSA(
+    rates_list,
+    n_delays=20,
+    delay_interval=2,
+    rank=15,
+    iters=5000,
+    lr=1e-2,
+    device="cpu",
+    verbose=True,
+)
 similarity_matrix = dsa.fit_score()
 
 # Step 5: Visualize with MDS
-embedding = MDS(dissimilarity="precomputed").fit_transform(1 - similarity_matrix)
+embedding = MDS(dissimilarity="precomputed").fit_transform(similarity_matrix)
 
 fig, ax = plt.subplots(figsize=(6, 6))
 
