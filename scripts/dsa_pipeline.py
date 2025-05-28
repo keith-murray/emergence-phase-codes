@@ -103,9 +103,9 @@ for _, row in tqdm(val_metrics.iterrows(), total=len(val_metrics)):
 print("Running DSA...")
 dsa = DSA(
     rates_list,
-    n_delays=20,
-    delay_interval=2,
-    rank=15,
+    n_delays=40,
+    delay_interval=1,
+    rank=50,
     iters=5000,
     lr=1e-2,
     device="cpu",
@@ -137,6 +137,13 @@ for i in range(len(embedding)):
             label=label,
             edgecolors="black",
         )
+        ax.text(
+            embedding[i, 0] + 0.01,
+            embedding[i, 1] + 0.01,
+            str(int(val_metrics.iloc[i]["seed"])),
+            fontsize=6,
+            alpha=0.75,
+        )
         seen.add(label)
     else:
         ax.scatter(
@@ -145,6 +152,13 @@ for i in range(len(embedding)):
             c=[cmap(norm(alphas[i]))],
             marker=marker_dict.get(markers[i], "o"),
             edgecolors="black",
+        )
+        ax.text(
+            embedding[i, 0] + 0.01,
+            embedding[i, 1] + 0.01,
+            str(int(val_metrics.iloc[i]["seed"])),
+            fontsize=6,
+            alpha=0.75,
         )
 
 plt.title("DSA MDS Embedding of CT-RNN Solutions")
