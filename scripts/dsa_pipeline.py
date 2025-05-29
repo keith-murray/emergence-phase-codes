@@ -113,11 +113,22 @@ dsa = DSA(
 )
 similarity_matrix = dsa.fit_score()
 
-# Step 5: Visualize with MDS
+# Save similarity matrix
+np.save("./data/similarity_matrix.npy", similarity_matrix)
+
+# Step 5: Visualize with MDS and similarity matrix
 embedding = MDS(dissimilarity="precomputed").fit_transform(similarity_matrix)
 
-fig, ax = plt.subplots(figsize=(6, 6))
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
 
+# Plot similarity matrix
+im = ax1.imshow(similarity_matrix, cmap="viridis")
+ax1.set_title("Similarity Matrix")
+ax1.set_xlabel("Model Index")
+ax1.set_ylabel("Model Index")
+fig.colorbar(im, ax=ax1)
+
+# Plot MDS embedding
 marker_dict = {
     "tanh": "o",
     "relu": "s",
@@ -129,7 +140,7 @@ seen = set()
 for i in range(len(embedding)):
     label = markers[i]
     if label not in seen:
-        ax.scatter(
+        ax2.scatter(
             embedding[i, 0],
             embedding[i, 1],
             c=[cmap(norm(alphas[i]))],
@@ -137,39 +148,33 @@ for i in range(len(embedding)):
             label=label,
             edgecolors="black",
         )
-        ax.text(
-            embedding[i, 0] + 0.01,
-            embedding[i, 1] + 0.01,
-            str(int(val_metrics.iloc[i]["seed"])),
-            fontsize=6,
-            alpha=0.75,
-        )
         seen.add(label)
     else:
-        ax.scatter(
+        ax2.scatter(
             embedding[i, 0],
             embedding[i, 1],
             c=[cmap(norm(alphas[i]))],
             marker=marker_dict.get(markers[i], "o"),
             edgecolors="black",
         )
-        ax.text(
-            embedding[i, 0] + 0.01,
-            embedding[i, 1] + 0.01,
-            str(int(val_metrics.iloc[i]["seed"])),
-            fontsize=6,
-            alpha=0.75,
-        )
+    ax2.text(
+        embedding[i, 0] + 0.01,
+        embedding[i, 1] + 0.01,
+        str(int(val_metrics.iloc[i]["seed"])),
+        fontsize=6,
+        alpha=0.75,
+    )
 
-plt.title("DSA MDS Embedding of CT-RNN Solutions")
-plt.xlabel("Component 1")
-plt.ylabel("Component 2")
-plt.grid(True)
-plt.tight_layout()
-plt.legend(title="Activation Function")
+ax2.set_title("DSA MDS Embedding of CT-RNN Solutions")
+ax2.set_xlabel("Component 1")
+ax2.set_ylabel("Component 2")
+ax2.grid(True)
+ax2.legend(title="Activation Function")
 sm = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
 sm.set_array([])
-cbar = fig.colorbar(sm, ax=ax)
+cbar = fig.colorbar(sm, ax=ax2)
 cbar.set_label("Alpha")
+
+plt.tight_layout()
 plt.savefig("./results/dsa_mds_embedding.png")
 plt.show()
