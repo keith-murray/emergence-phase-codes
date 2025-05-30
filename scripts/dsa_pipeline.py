@@ -24,7 +24,7 @@ from emergence_phase_codes.training import compute_classification_accuracy
 
 # Load validation metrics
 val_metrics = pd.read_csv("./data/validation_metrics.csv")
-val_metrics = val_metrics.sort_values(by="seed")
+val_metrics = val_metrics.sort_values(by="job_id")
 
 # Parameters
 MOD = 3
@@ -160,7 +160,7 @@ for i in range(len(embedding)):
     ax2.text(
         embedding[i, 0] + 0.01,
         embedding[i, 1] + 0.01,
-        str(int(val_metrics.iloc[i]["seed"])),
+        str(int(val_metrics.iloc[i]["job_id"])),
         fontsize=6,
         alpha=0.75,
     )
