@@ -138,6 +138,7 @@ def train_model_with_validation(
     time_index,
     rate_penalty,
     tqdm_disable=False,
+    early_stop_accuracy=None,
 ):
     """Train model on task with validation set and track best model."""
 
@@ -188,6 +189,13 @@ def train_model_with_validation(
             best_val_loss = val_loss
             best_val_metrics = {"loss": val_loss, "accuracy": val_accuracy}
             best_state = state
+
+        # Early Stopping logic
+        if early_stop_accuracy is not None and val_accuracy >= early_stop_accuracy:
+            print(
+                f"Stopping early: val acc {val_accuracy:.4f} >= thresh {early_stop_accuracy}"
+            )
+            break
 
     return state, best_state, best_val_metrics, metrics_history
 
