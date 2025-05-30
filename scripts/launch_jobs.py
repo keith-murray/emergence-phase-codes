@@ -10,6 +10,10 @@ BASE_DIR = "./jobs"
 
 def train_job(task_dir):
     """Function to call `pipeline.py` with pointer to json config."""
+    model_path = os.path.join(BASE_DIR, task_dir, "model.bin")
+    if os.path.exists(model_path):
+        print(f"Skipping {task_dir}, model.bin already exists.")
+        return
     params_path = os.path.join(BASE_DIR, task_dir, "params.json")
     subprocess.run(["python", "scripts/training_pipeline.py", params_path], check=False)
     subprocess.run(["python", "scripts/figure_pipeline.py", params_path], check=False)

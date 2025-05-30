@@ -93,6 +93,7 @@ def main(params_path):
     # Save best validation metrics to CSV
     metrics_path = os.path.join("./data/", "validation_metrics.csv")
     new_row = [
+        config["job_id"],
         config["seed"],
         float(best_metrics["loss"]),
         float(best_metrics["accuracy"]),
@@ -109,13 +110,14 @@ def main(params_path):
             reader = csv.reader(csvfile)
             headers = next(reader)
             for row in reader:
-                if int(row[0]) == config["seed"]:
+                if int(row[0]) == config["job_id"]:
                     rows.append(new_row)
                     found = True
                 else:
                     rows.append(row)
     else:
         headers = [
+            "job_id",
             "seed",
             "best_validation_loss",
             "best_validation_accuracy",
