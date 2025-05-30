@@ -75,12 +75,12 @@ def main(params_path):
             validation_dataset,
             config["time_index"],
             config["rate_penalty"],
+            early_stop_accuracy=config["stop_acc"],
         )
     )
 
     # Plot metric history
     plot_training_loss_accuracy(
-        config["epochs"],
         metrics_history,
         save_loc=os.path.join(config["task_dir"], "metrics_history.png"),
         show=False,
@@ -92,33 +92,46 @@ def main(params_path):
 
     # Save best validation metrics to CSV
     metrics_path = os.path.join("./data/", "validation_metrics.csv")
-    file_exists = os.path.isfile(metrics_path)
+    new_row = [
+        config["seed"],
+        float(best_metrics["loss"]),
+        float(best_metrics["accuracy"]),
+        config["alpha"],
+        config["noise"],
+        config["activation_fn"],
+        config["task_dir"],
+    ]
 
-    with open(metrics_path, mode="a", newline="", encoding="utf-8") as csvfile:
+    rows = []
+    found = False
+    if os.path.isfile(metrics_path):
+        with open(metrics_path, mode="r", encoding="utf-8") as csvfile:
+            reader = csv.reader(csvfile)
+            headers = next(reader)
+            for row in reader:
+                if int(row[0]) == config["seed"]:
+                    rows.append(new_row)
+                    found = True
+                else:
+                    rows.append(row)
+    else:
+        headers = [
+            "seed",
+            "best_validation_loss",
+            "best_validation_accuracy",
+            "alpha",
+            "noise",
+            "activation_fn",
+            "task_dir",
+        ]
+
+    if not found:
+        rows.append(new_row)
+
+    with open(metrics_path, mode="w", newline="", encoding="utf-8") as csvfile:
         writer = csv.writer(csvfile)
-        if not file_exists:
-            writer.writerow(
-                [
-                    "seed",
-                    "best_validation_loss",
-                    "best_validation_accuracy",
-                    "alpha",
-                    "noise",
-                    "activation_fn",
-                    "task_dir",
-                ]
-            )
-        writer.writerow(
-            [
-                config["seed"],
-                float(best_metrics["loss"]),
-                float(best_metrics["accuracy"]),
-                config["alpha"],
-                config["noise"],
-                config["activation_fn"],
-                config["task_dir"],
-            ]
-        )
+        writer.writerow(headers)
+        writer.writerows(rows)
 
 
 if __name__ == "__main__":

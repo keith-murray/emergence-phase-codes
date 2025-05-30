@@ -25,10 +25,11 @@ def main():
             "alpha": alpha,
             "noise": noise,
             "activation_fn": activation_fn,
-            "epochs": 500,
+            "epochs": 250,
             "learning_rate": 1e-4,
             "rate_penalty": 1e-4,
             "time_index": -3,
+            "stop_acc": 0.99,
             "task_dir": task_dir,
         }
 
