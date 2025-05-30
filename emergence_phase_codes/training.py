@@ -200,21 +200,19 @@ def train_model_with_validation(
     return state, best_state, best_val_metrics, metrics_history
 
 
-def plot_training_loss_accuracy(epochs, metrics_history, save_loc=False, show=True):
+def plot_training_loss_accuracy(metrics_history, save_loc=False, show=True):
     """Standard plotting function for training loss and accuracy."""
     # Visualize training metrics
     _, axs = plt.subplots(1, 2, figsize=(12, 5))
 
     # Panel 1: Loss over training epochs
     axs[0].plot(
-        jnp.arange(epochs),
         metrics_history["train_loss"],
         label="Train",
         color="tab:blue",
     )
     if "val_loss" in metrics_history:
         axs[0].plot(
-            jnp.arange(epochs),
             metrics_history["val_loss"],
             label="Validation",
             color="tab:orange",
@@ -227,14 +225,12 @@ def plot_training_loss_accuracy(epochs, metrics_history, save_loc=False, show=Tr
 
     # Panel 2: Accuracy over training epochs
     axs[1].plot(
-        jnp.arange(epochs),
         metrics_history["train_accuracy"],
         label="Train",
         color="tab:blue",
     )
     if "val_accuracy" in metrics_history:
         axs[1].plot(
-            jnp.arange(epochs),
             metrics_history["val_accuracy"],
             label="Validation",
             color="tab:orange",
