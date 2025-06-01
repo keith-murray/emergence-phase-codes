@@ -9,6 +9,7 @@ from jax import random
 import pandas as pd
 from tqdm import tqdm
 from sklearn.manifold import MDS
+from sklearn.decomposition import PCA
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
@@ -38,8 +39,24 @@ PULSE_CONFIG = {
     "pulse_amplitude": 5,
 }
 TIME_LENGTH = 50
-NUM_TRIALS = 1500
+NUM_TRIALS = 500
 JOBS_PATH = "./jobs"
+
+
+def apply_pca_to_rates(rates_pre_pc, n_components=10):
+    """Function to reduce dimensionality of rates."""
+    n_trials, time_steps, n_neurons = rates_pre_pc.shape
+    flattened = rates_pre_pc.reshape(
+        -1, n_neurons
+    )  # shape (n_trials * time_steps, n_neurons)
+
+    pca = PCA(n_components=n_components)
+    reduced = pca.fit_transform(
+        flattened
+    )  # shape (n_trials * time_steps, n_components)
+
+    return reduced.reshape(n_trials, time_steps, n_components)
+
 
 # Create a shared M3A test dataset
 key = random.PRNGKey(42)
@@ -52,6 +69,7 @@ task = ModuloNArithmetic(
     num_trials=NUM_TRIALS,
     pulse_config=PULSE_CONFIG,
 )
+task.build_sequence_balanced_dataset(30, 15)
 test_inputs, test_targets = task.generate_jax_tensor()
 
 # Run all models on the test data
@@ -92,7 +110,10 @@ for _, row in tqdm(val_metrics.iterrows(), total=len(val_metrics)):
     )
 
     print(f"Testing accuracy: {accuracy}")
-    rates_list.append(np.asarray(rates))
+
+    # Apply PCA and store rates
+    reduced_rates = apply_pca_to_rates(np.asarray(rates), n_components=10)
+    rates_list.append(reduced_rates)
     alphas.append(row["alpha"])
     markers.append(row["activation_fn"])
 
@@ -100,10 +121,10 @@ for _, row in tqdm(val_metrics.iterrows(), total=len(val_metrics)):
 print("Running DSA...")
 dsa = DSA(
     rates_list,
-    n_delays=5,
-    delay_interval=9,
-    rank=10,
-    iters=1500,
+    n_delays=10,
+    delay_interval=5,
+    rank=25,
+    iters=500,
     lr=1e-2,
     device="cpu",
     verbose=True,
