@@ -61,12 +61,11 @@ def main(params_path):
     )
 
     # Generate validation dataset
-    task.num_trials = 500
-    task.build_balanced_dataset()
+    task.build_sequence_balanced_dataset(50, 25)
     validation_dataset = task.generate_tf_dataset(16)
 
     # Train model with validation
-    train_state, best_params, best_metrics, metrics_history = (
+    train_state, best_params, best_metrics, metrics_history, final_epoch = (
         train_model_with_validation(
             key,
             config["epochs"],
@@ -75,7 +74,8 @@ def main(params_path):
             validation_dataset,
             config["time_index"],
             config["rate_penalty"],
-            early_stop_accuracy=config["stop_acc"],
+            early_stop_loss=config["stop_loss"],
+            job_id=config["job_id"],
         )
     )
 
@@ -97,6 +97,7 @@ def main(params_path):
         config["seed"],
         float(best_metrics["loss"]),
         float(best_metrics["accuracy"]),
+        final_epoch,
         config["alpha"],
         config["noise"],
         config["activation_fn"],
@@ -119,8 +120,9 @@ def main(params_path):
         headers = [
             "job_id",
             "seed",
-            "best_validation_loss",
-            "best_validation_accuracy",
+            "best_loss",
+            "best_accuracy",
+            "final_epoch",
             "alpha",
             "noise",
             "activation_fn",
