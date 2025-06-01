@@ -18,11 +18,11 @@ def main():
     activation_functions = ["tanh", "relu"]
     job_combinations = list(product(alpha_values, noise_values, activation_functions))
 
-    key = random.PRNGKey(0)
+    key = random.PRNGKey(420)
 
     job_id = 0
     for alpha, noise, activation_fn in job_combinations:
-        for _ in range(10):  # 10 seeds per condition
+        for _ in range(5):  # 10 seeds per condition
             key, subkey = random.split(key)
             seed = int(random.randint(subkey, (), 0, 2**31 - 1))
 
@@ -39,7 +39,7 @@ def main():
                 "learning_rate": 1e-4,
                 "rate_penalty": 1e-4,
                 "time_index": -3,
-                "stop_acc": 0.99,
+                "stop_loss": 0.001,
                 "task_dir": task_dir,
             }
 

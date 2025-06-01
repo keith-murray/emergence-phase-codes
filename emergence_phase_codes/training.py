@@ -138,7 +138,8 @@ def train_model_with_validation(
     time_index,
     rate_penalty,
     tqdm_disable=False,
-    early_stop_accuracy=None,
+    early_stop_loss=None,
+    job_id=None,
 ):
     """Train model on task with validation set and track best model."""
 
@@ -152,8 +153,9 @@ def train_model_with_validation(
     best_val_loss = float("inf")
     best_state = None
     best_val_metrics = {}
+    final_epoch = None
 
-    for _ in tqdm(range(epochs), disable=tqdm_disable):
+    for epoch in tqdm(range(epochs), disable=tqdm_disable):
         # Training step
         for _, batch in enumerate(tf_dataset_train.as_numpy_iterator()):
             key, train_key, metrics_key = random.split(key, num=3)
@@ -191,13 +193,12 @@ def train_model_with_validation(
             best_state = state
 
         # Early Stopping logic
-        if early_stop_accuracy is not None and val_accuracy >= early_stop_accuracy:
-            print(
-                f"Stopping early: val acc {val_accuracy:.4f} >= thresh {early_stop_accuracy}"
-            )
+        if early_stop_loss is not None and val_loss <= early_stop_loss:
+            final_epoch = epoch
+            print(f"Stopping early for job {job_id} at epoch {final_epoch}")
             break
 
-    return state, best_state, best_val_metrics, metrics_history
+    return state, best_state, best_val_metrics, metrics_history, final_epoch
 
 
 def plot_training_loss_accuracy(metrics_history, save_loc=False, show=True):
