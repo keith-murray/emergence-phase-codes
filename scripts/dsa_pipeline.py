@@ -59,9 +59,6 @@ rates_list = []
 alphas = []
 markers = []
 for _, row in tqdm(val_metrics.iterrows(), total=len(val_metrics)):
-    # Retrieve validation accuracy
-    csv_accuracy = row["best_validation_accuracy"]
-
     # Re-initialize model
     model = initialize_ctrnn_with_activation(
         hidden_features=HIDDEN_SIZE,
@@ -94,7 +91,7 @@ for _, row in tqdm(val_metrics.iterrows(), total=len(val_metrics)):
         output[:, -1, -1], test_targets[:, -1, -1]
     )
 
-    print(f"Validation accuracy: {csv_accuracy}\nTesting accuracy: {accuracy}")
+    print(f"Testing accuracy: {accuracy}")
     rates_list.append(np.asarray(rates))
     alphas.append(row["alpha"])
     markers.append(row["activation_fn"])
@@ -117,7 +114,10 @@ similarity_matrix = dsa.fit_score()
 np.save("./data/similarity_matrix.npy", similarity_matrix)
 
 # Step 5: Visualize with MDS and similarity matrix
-embedding = MDS(dissimilarity="precomputed").fit_transform(similarity_matrix)
+embedding = MDS(
+    dissimilarity="precomputed",
+    random_state=42,
+).fit_transform(similarity_matrix)
 
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
 
