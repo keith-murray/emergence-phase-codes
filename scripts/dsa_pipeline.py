@@ -103,10 +103,10 @@ for _, row in tqdm(val_metrics.iterrows(), total=len(val_metrics)):
 print("Running DSA...")
 dsa = DSA(
     rates_list,
-    n_delays=2,
-    delay_interval=2,
-    rank=30,
-    iters=5000,
+    n_delays=5,
+    delay_interval=9,
+    rank=10,
+    iters=1500,
     lr=1e-2,
     device="cpu",
     verbose=True,
