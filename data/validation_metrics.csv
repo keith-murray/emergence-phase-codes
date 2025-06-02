@@ -89,3 +89,4 @@ job_id,seed,best_loss,best_accuracy,final_epoch,alpha,noise,activation_fn,task_d
 87,943362966,0.0009811408817768097,1.0,629,1.0,0.1,relu,./jobs/task_0087
 83,740613271,0.0009813116630539298,1.0,843,1.0,0.1,tanh,./jobs/task_0083
 71,1192037558,0.005549053195863962,0.9944196343421936,,1.0,0.05,tanh,./jobs/task_0071
+100,,,,,1.0,0.05,tanh,./data/phase_code_solution_m3a_task.bin

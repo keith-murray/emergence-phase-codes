@@ -95,7 +95,10 @@ for _, row in tqdm(val_metrics.iterrows(), total=len(val_metrics)):
 
     # Load parameters
     params = ModelParameters(model_state)
-    params.deserialize(os.path.join(row["task_dir"], "model.bin"))
+    if row["job_id"] < 100:
+        params.deserialize(os.path.join(row["task_dir"], "model.bin"))
+    else:
+        params.deserialize(row["task_dir"])
 
     # Run model
     key, subkey = random.split(key)
@@ -124,7 +127,7 @@ dsa = DSA(
     n_delays=10,
     delay_interval=5,
     rank=25,
-    iters=500,
+    iters=1000,
     lr=1e-2,
     device="cpu",
     verbose=True,
@@ -149,7 +152,6 @@ ax1.set_xlabel("Model Index")
 ax1.set_ylabel("Model Index")
 fig.colorbar(im, ax=ax1)
 
-# Plot MDS embedding
 marker_dict = {
     "tanh": "o",
     "relu": "s",
@@ -157,27 +159,48 @@ marker_dict = {
 # pylint: disable=no-member
 cmap = cm.cool
 norm = mcolors.Normalize(vmin=min(alphas), vmax=max(alphas))
+
 seen = set()
 for i in range(len(embedding)):
     label = markers[i]
-    if label not in seen:
+    color = cmap(norm(alphas[i]))
+    marker = marker_dict.get(markers[i], "o")
+    EDGE_COLOR = "black"
+
+    # Special styling for job_id == 100
+    if val_metrics.iloc[i]["job_id"] == 100:
         ax2.scatter(
             embedding[i, 0],
             embedding[i, 1],
-            c=[cmap(norm(alphas[i]))],
-            marker=marker_dict.get(markers[i], "o"),
-            label=label,
-            edgecolors="black",
+            c="gold",
+            marker="*",
+            s=200,
+            edgecolors=EDGE_COLOR,
+            linewidths=1.5,
+            zorder=5,
+            label="Phase Code" if "Phase Code" not in seen else None,
         )
-        seen.add(label)
+        seen.add("Phase Code")
     else:
-        ax2.scatter(
-            embedding[i, 0],
-            embedding[i, 1],
-            c=[cmap(norm(alphas[i]))],
-            marker=marker_dict.get(markers[i], "o"),
-            edgecolors="black",
-        )
+        if label not in seen:
+            ax2.scatter(
+                embedding[i, 0],
+                embedding[i, 1],
+                c=[color],
+                marker=marker,
+                edgecolors=EDGE_COLOR,
+                label=label,
+            )
+            seen.add(label)
+        else:
+            ax2.scatter(
+                embedding[i, 0],
+                embedding[i, 1],
+                c=[color],
+                marker=marker,
+                edgecolors=EDGE_COLOR,
+            )
+
     ax2.text(
         embedding[i, 0] + 0.01,
         embedding[i, 1] + 0.01,
