@@ -35,7 +35,7 @@ class OutputAnimator:
         # Set up the axis.
         self.ax.set_xlim((-0.05, time_end + 0.05))
         self.ax.set_ylim(self.ylim)
-        self.ax.set_title(title)
+        self.ax.set_title(title, fontsize="large")
         self.ax.set_xlabel("Time (s)")
         self.ax.set_ylabel("Model output")
         self.ax.axhline(y=0, ls="--", lw=2, alpha=0.5, color="tab:grey")
